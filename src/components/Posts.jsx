@@ -9,7 +9,7 @@ export default function Cards() {
         title: '',
         image: '',
         content: '',
-        tags: '',
+        tags: [],
         available: false // per gestire se l'articolo è pubblico o privato, inizialemnte privato 
     }
     // data contiene la lista degli articoli, inizialmente è l'array articles
@@ -19,15 +19,19 @@ export default function Cards() {
     // formData: Stato che contiene i dati dell’articolo che l'utente sta compilando
     const [formData, setFormData] = useState(initialForm)
 
+    // Funzione per recuperare i dati dei post dal server
     function fetchPosts() {
-        axios.get('http://localhost:3000/posts')
-            .then((res) => setData(res.data))
-            .catch((err) => console.error("Errore nel fetch:", err));
+        axios.get('http://localhost:3000/posts') // Effettua una richiesta HTTP GET all'endpoint specificato
+            .then((res) => setData(res.data)
+            ) // Se la richiesta ha successo, aggiorna lo stato con i dati ricevuti
+            .catch((err) => console.error("Errore nel fetch:", err)); // Se c'è un errore, lo stampa nella console
     }
-
+    // useEffect viene usato per eseguire codice quando il componente viene montato
     useEffect(() => {
-        fetchPosts();
-    }, [])
+        fetchPosts(); // Chiama la funzione fetchPosts() appena il componente viene caricato
+    }, []) // Il secondo argomento, un array vuoto [], fa sì che questa funzione venga eseguita solo al primo render
+
+
 
     // Questa funzione aggiorna lo stato formData quando l'utente compila i campi del modulo.
     const handleFormData = (e) => {
@@ -53,14 +57,22 @@ export default function Cards() {
     const addArticle = (e) => {
         e.preventDefault(); // Evita il ricaricamento della pagina al submit del form
 
-        // Aggiunge il nuovo articolo alla lista, assegnando un nuovo id incrementale
-        setData((currentList) => [
-            // L'operatore spread (...) crea una copia superficiale della lista attuale degli articoli. In questo modo, non stiamo modificando direttamente lo stato, ma creando un nuovo array che contiene gli articoli esistenti
-            ...currentList,
+        // // Aggiunge il nuovo articolo alla lista, assegnando un nuovo id incrementale
+        // setData((currentList) => [
+        //     // L'operatore spread (...) crea una copia superficiale della lista attuale degli articoli. In questo modo, non stiamo modificando direttamente lo stato, ma creando un nuovo array che contiene gli articoli esistenti
+        //     ...currentList,
 
-            // Questo codice calcola il nuovo id per l'articolo. Se ci sono già articoli nella lista (currentList.length > 0), prende l'ID dell'ultimo articolo e lo incrementa di 1. Se non ci sono articoli (cioè currentList.length === 0), assegna l'ID 1 al nuovo articolo.
-            { id: currentList.length > 0 ? currentList[currentList.length - 1].id + 1 : 1, ...formData }
-        ]);
+        //     // Questo codice calcola il nuovo id per l'articolo. Se ci sono già articoli nella lista (currentList.length > 0), prende l'ID dell'ultimo articolo e lo incrementa di 1. Se non ci sono articoli (cioè currentList.length === 0), assegna l'ID 1 al nuovo articolo.
+        //     { id: currentList.length > 0 ? currentList[currentList.length - 1].id + 1 : 1, ...formData }
+        // ]);
+        axios.post('http://localhost:3000/posts', formData) // Effettua una richiesta POST per aggiungere un nuovo articolo sul server, passando i dati del form (formData)
+            .then((res) => {
+                // Una volta che la risposta è ricevuta con successo, aggiorniamo lo stato data
+                // Aggiungiamo il nuovo articolo (res.data) alla lista esistente di articoli
+                setData((currentPosts) => [...currentPosts, res.data])
+            })
+            .catch(err => console.log(err) // Se c'è un errore nella richiesta, lo stampiamo nella console
+            )
         // All'invio del form questo lo resetta tornando allo stato iniziale
         setFormData(initialForm);
     };
@@ -77,7 +89,7 @@ export default function Cards() {
 
     return (
         <>
-            <h1>LISTA ARTICOLI</h1>
+            <h1>LISTA POST</h1>
             {/* con onSubmit richiamo la funzione dell'invio del form */}
             <form onSubmit={addArticle}>
                 <input
@@ -117,7 +129,7 @@ export default function Cards() {
                     required
                 />
                 <button
-                // type="sumbit"
+                    type="submit"
                 >INVIA
                 </button>
                 <label htmlFor="available">Pubblico</label>
@@ -135,14 +147,14 @@ export default function Cards() {
             >
                 Fetch Posts
             </button>
-            {data.length === 0 ? 'Nessun articolo disponibile' :
+            {data.length === 0 ? <div className="not-found">Nessun post disponibile</div> :
                 <div className="container-cards">
                     {data.map((post) => (
                         <div className="card" key={post.id}>
                             <h2>{post.title}</h2>
                             <img src={post.image} alt={post.title} />
                             <p>{post.content}</p>
-                            <span>{post.tags.join(', ')}</span><br />
+                            <span>{post.tags}</span><br />
                             <span className={post.available ? 'public' : 'private'}>{post.available ? 'Pubblico' : 'Privato'}</span>
                             {/* è un evento che viene attivato quando l'utente fa clic sul pulsante "X" per eliminare un articolo. */}
                             <button onClick={() => deleteArticle(post.id)}>
